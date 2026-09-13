@@ -1,5 +1,6 @@
 // Inserimento / modifica transazione con tastierino calcolatrice
-import { live, upsert, remove, restore, byId } from '../store.js';
+import { live, upsert, remove, restore, byId, subscribe } from '../store.js';
+import { editCategory } from './categories.js';
 import { t } from '../i18n.js';
 import { openSheet, openModal, closeLayer, sheetHead, toast, confirm, ICON } from '../ui.js';
 import { esc, money, num, evalExpr, todayISO, fmtDate } from '../format.js';
@@ -30,6 +31,8 @@ export function openAdd(opts = {}) {
     el.querySelectorAll('[data-type]').forEach(b => b.onclick = () => { s.type = b.dataset.type; if (s.type !== 'transfer') { const c = byId('categories').get(s.categoryId); if (c && c.type !== s.type) s.categoryId = null; } draw(); });
     el.querySelectorAll('[data-key]').forEach(b => b.onclick = () => key(b.dataset.key));
     el.querySelector('[data-next]')?.addEventListener('click', next);
+    el.querySelector('[data-pickcat]')?.addEventListener('click', () => { s.step = 'category'; draw(); });
+    el.querySelector('[data-newcat]')?.addEventListener('click', () => editCategory(null, s.type));
     el.querySelector('[data-account]')?.addEventListener('click', () => pickAccount('accountId'));
     el.querySelector('[data-toaccount]')?.addEventListener('click', () => pickAccount('toAccountId'));
     const dateInp = el.querySelector('[data-date-input]');
@@ -89,6 +92,7 @@ export function openAdd(opts = {}) {
   }
 
   draw();
+  const unsub = subscribe(w => { if (!document.body.contains(el)) { unsub(); return; } if (w === 'data' && s.step === 'category') draw(); });
   return el;
 }
 
@@ -108,7 +112,7 @@ function view(s, tx) {
     const cats = live.categories(s.type).filter(c => !c.archived);
     return `<div class="add">
       <div class="sheet-head"><button class="iconbtn" data-back>${ICON.back}</button><div class="title">${t('choose_category')}</div><div class="${s.type}" style="font-weight:700">${money(evalExpr(s.expr) || 0)}</div></div>
-      <div class="catgrid">${cats.map(c => `<button data-cat="${c.id}" class="${c.id === s.categoryId ? 'active' : ''}" style="--c:${esc(c.color)};--c-bg:${esc(c.color)}22"><div class="ico">${esc(c.icon)}</div><div class="nm">${esc(c.name)}</div></button>`).join('')}</div>
+      <div class="catgrid">${cats.map(c => `<button data-cat="${c.id}" class="${c.id === s.categoryId ? 'active' : ''}" style="--c:${esc(c.color)};--c-bg:${esc(c.color)}22"><div class="ico">${esc(c.icon)}</div><div class="nm">${esc(c.name)}</div></button>`).join('')}<button data-newcat style="opacity:.75"><div class="ico" style="background:var(--surface-2);border-style:dashed;border-color:var(--text-2)">＋</div><div class="nm">${t('new_category')}</div></button></div>
       ${cats.length ? '' : `<div class="empty">${t('no_data')}</div>`}
     </div>`;
   }
@@ -125,7 +129,7 @@ function view(s, tx) {
       ${s.type === 'transfer' ? `<span class="muted" style="align-self:center">→</span><button class="chip set" data-toaccount>${esc(toAcc?.icon || '')} ${esc(toAcc?.name || t('to_account'))}</button>` : ''}
       <button class="chip set" data-date>${ICON.calendar.replace('<svg', '<svg style="width:16px;height:16px;vertical-align:-3px"')} ${esc(fmtDate(s.date, 'day'))}</button>
       <input type="date" data-date-input value="${s.date}" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
-      ${s.type !== 'transfer' && cat ? `<button class="chip set" data-next style="--c:${esc(cat.color)}">${esc(cat.icon)} ${esc(cat.name)}</button>` : ''}
+      ${s.type !== 'transfer' && cat ? `<button class="chip set" data-pickcat style="--c:${esc(cat.color)}">${esc(cat.icon)} ${esc(cat.name)} ▾</button>` : ''}
     </div>
     <div class="field"><input data-note placeholder="${t('note_placeholder')}" value="${esc(s.note)}" maxlength="120"></div>
     <label class="row small muted" style="margin-bottom:6px"><input type="checkbox" data-recurring ${s.isRecurring ? 'checked' : ''} style="width:auto"> ${t('recurring_label')}</label>
