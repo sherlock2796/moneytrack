@@ -92,3 +92,7 @@ begin
     execute format('create policy "own rows" on public.%I for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid())', t);
   end loop;
 end $$;
+
+-- privilegi Data API per gli utenti autenticati (le policy RLS limitano alle proprie righe)
+grant usage on schema public to authenticated;
+grant all on all tables in schema public to authenticated;
