@@ -3,5 +3,5 @@
 export const CONFIG = {
   supabaseUrl: 'https://xbaosbdfqxrgdvkyeocc.supabase.co',
   supabaseKey: 'sb_publishable_5rSv1TxsUbYHcUVYkg_s1g_labquywi',
-  version: '0.1.2',
+  version: '0.1.3',
 };
