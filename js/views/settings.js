@@ -3,8 +3,8 @@ import { state, live, setSetting, upsert, remove, byId, emit, subscribe } from '
 import * as db from '../db.js';
 import { t, setLang, LANGS } from '../i18n.js';
 import { esc, money, fmtDate, todayISO } from '../format.js';
-import { openSheet, closeLayer, sheetHead, toast, confirm, alert, ICON } from '../ui.js';
-import { syncState, getClient, signIn, signUp, signOut, sync, scheduleSync } from '../sync.js';
+import { openSheet, openModal, closeLayer, sheetHead, toast, confirm, alert, ICON } from '../ui.js';
+import { syncState, getClient, signIn, signUp, signOut, sync, scheduleSync, cloudHasData, resetLocalAndPull } from '../sync.js';
 import { exportJSON, importJSON, exportCSV, download, pickFile, loadNotionSeed, importNotionSeed } from '../importer.js';
 import { FREQUENCIES, upcoming, monthlyEquivalent, processDue } from '../recurring.js';
 import { editCategory } from './categories.js';
@@ -100,8 +100,20 @@ async function auth(el, mode) {
   const email = el.querySelector('[data-email]').value.trim(), pw = el.querySelector('[data-password]').value;
   if (!email || !pw) return;
   try {
-    if (mode === 'in') await signIn(email, pw); else { const r = await signUp(email, pw); if (!r.session) await alert('Controlla la tua email per confermare la registrazione, poi accedi.'); }
-    render(el); scheduleSync(300);
+    if (mode === 'in') await signIn(email, pw); else { const r = await signUp(email, pw); if (!r.session) { await alert(t('signup_confirm_email')); render(el); return; } }
+    render(el);
+    // dati locali mai sincronizzati + cloud già popolato → chiedi cosa fare (evita doppioni)
+    const localRows = live.transactions().length + live.accounts().length + live.categories().length;
+    if (localRows > 0 && !state.settings.last_sync && (await cloudHasData())) {
+      const choice = await new Promise(resolve => {
+        const m = openModal(`<div class="title">${t('login_conflict_title')}</div><p class="muted small">${t('login_conflict_text')}</p>
+          <div class="actions" style="flex-wrap:wrap"><button class="btn" data-merge>${t('login_merge')}</button><button class="btn primary" data-cloud>${t('login_use_cloud')}</button></div>`, { dismissable: false });
+        m.querySelector('[data-merge]').onclick = () => { closeLayer(m); resolve('merge'); };
+        m.querySelector('[data-cloud]').onclick = () => { closeLayer(m); resolve('cloud'); };
+      });
+      if (choice === 'cloud') { await resetLocalAndPull(); render(el); return; }
+    }
+    scheduleSync(300);
   } catch (e) { toast(t('error') + ': ' + (e.message || e)); }
 }
 

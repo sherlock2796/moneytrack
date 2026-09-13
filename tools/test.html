@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>MoneyTrack — test</title>
+<style>body{font:14px monospace;padding:16px} .ok{color:#2e7d32} .ko{color:#c62828;font-weight:bold} h2{margin:16px 0 4px}</style></head>
+<body><h1>MoneyTrack — test funzioni</h1><div id="out"></div>
+<script type="module">
+import { evalExpr, addMonths, addDays, toISO, fromISO, money, num, uuid } from '../js/format.js';
+import { range, shift, label, lastMonths } from '../js/periods.js';
+import { advance, monthlyEquivalent } from '../js/recurring.js';
+import { donutSVG, barsSVG, ringPositions } from '../js/charts.js';
+import { setLang } from '../js/i18n.js';
+
+const out = document.getElementById('out'); let pass = 0, fail = 0;
+function section(t) { out.insertAdjacentHTML('beforeend', `<h2>${t}</h2>`); }
+function eq(name, got, exp) {
+  const ok = JSON.stringify(got) === JSON.stringify(exp); ok ? pass++ : fail++;
+  out.insertAdjacentHTML('beforeend', `<div class="${ok ? 'ok' : 'ko'}">${ok ? '✓' : '✗'} ${name}${ok ? '' : ` — atteso ${JSON.stringify(exp)}, ottenuto ${JSON.stringify(got)}`}</div>`);
+}
+setLang('it');
+
+section('evalExpr (tastierino)');
+eq('12.50+3.20', evalExpr('12.50+3.20'), 15.7);
+eq('2+3×4 (precedenza)', evalExpr('2+3×4'), 14);
+eq('10÷4', evalExpr('10÷4'), 2.5);
+eq('10-2-3 (associatività sx)', evalExpr('10-2-3'), 5);
+eq('100÷3 arrotondato', evalExpr('100÷3'), 33.33);
+eq('operatore finale ignorato "12+"', evalExpr('12+'), 12);
+eq('vuoto → 0', evalExpr(''), 0);
+eq('"5÷0" → NaN', isNaN(evalExpr('5÷0')), true);
+eq('".5"', evalExpr('.5'), 0.5);
+eq('"-5" negativo', evalExpr('-5'), -5);
+eq('virgola "1,5+1"', evalExpr('1,5+1'), 2.5);
+eq('caratteri estranei → NaN', isNaN(evalExpr('1+a')), true);
+eq('0.1+0.2 arrotondato', evalExpr('0.1+0.2'), 0.3);
+eq('1.005×1 (round2)', evalExpr('1.005×1'), 1);
+
+section('date');
+eq('addMonths 31 gen +1 → 28 feb', addMonths('2026-01-31', 1), '2026-02-28');
+eq('addMonths 31 gen +1 (2028 bisestile)', addMonths('2028-01-31', 1), '2028-02-29');
+eq('addMonths 30 nov -1', addMonths('2026-11-30', -1), '2026-10-30');
+eq('addMonths dic +1 → anno dopo', addMonths('2026-12-15', 1), '2027-01-15');
+eq('addDays fine anno', addDays('2026-12-31', 1), '2027-01-01');
+eq('toISO/fromISO roundtrip', toISO(fromISO('2026-03-29')), '2026-03-29');
+eq('money it-IT', money(1234.5), '1.234,50 €');
+eq('money negativo', money(-3), '−3,00 €');
+eq('money ≥ 10.000', money(12345.678), '12.345,68 €');
+eq('num 2 decimali', num(0.5), '0,50');
+eq('uuid formato', /^[0-9a-f-]{36}$/.test(uuid()), true);
+
+section('periodi');
+eq('mese', range({ type: 'month', anchor: '2026-02-10' }), { from: '2026-02-01', to: '2026-02-28' });
+eq('settimana (lunedì-domenica)', range({ type: 'week', anchor: '2026-09-13' }), { from: '2026-09-07', to: '2026-09-13' });
+eq('settimana anchor lunedì', range({ type: 'week', anchor: '2026-09-14' }), { from: '2026-09-14', to: '2026-09-20' });
+eq('anno', range({ type: 'year', anchor: '2026-06-01' }), { from: '2026-01-01', to: '2026-12-31' });
+eq('tutto', range({ type: 'all' }), { from: null, to: null });
+eq('giorno', range({ type: 'day', anchor: '2026-09-13' }), { from: '2026-09-13', to: '2026-09-13' });
+eq('shift mese da 31 gen', range(shift({ type: 'month', anchor: '2026-01-31' }, 1)), { from: '2026-02-01', to: '2026-02-28' });
+eq('shift mese indietro da marzo', range(shift({ type: 'month', anchor: '2026-03-31' }, -1)), { from: '2026-02-01', to: '2026-02-28' });
+eq('shift anno', range(shift({ type: 'year', anchor: '2026-06-01' }, 1)).from, '2027-01-01');
+eq('shift settimana', range(shift({ type: 'week', anchor: '2026-09-13' }, 1)), { from: '2026-09-14', to: '2026-09-20' });
+eq('custom shift (10 giorni)', range(shift({ type: 'custom', from: '2026-09-01', to: '2026-09-10' }, 1)), { from: '2026-09-11', to: '2026-09-20' });
+eq('label mese', label({ type: 'month', anchor: '2026-09-13' }), 'settembre 2026');
+eq('lastMonths(3)', lastMonths(3, '2026-09-13').map(m => m.from), ['2026-07-01', '2026-08-01', '2026-09-01']);
+
+section('ricorrenze');
+eq('monthly 31 gen → 28 feb', advance('2026-01-31', 'monthly'), '2026-02-28');
+eq('weekly', advance('2026-09-13', 'weekly'), '2026-09-20');
+eq('quarterly', advance('2026-01-15', 'quarterly'), '2026-04-15');
+eq('yearly 29 feb', advance('2028-02-29', 'yearly'), '2029-02-28');
+eq('two_years', advance('2026-05-01', 'two_years'), '2028-05-01');
+eq('equivalente mensile yearly 120', monthlyEquivalent({ amount: 120, frequency: 'yearly' }), 10);
+eq('equivalente mensile weekly 10', Math.round(monthlyEquivalent({ amount: 10, frequency: 'weekly' }) * 100) / 100, 43.33);
+
+section('grafici');
+eq('donut vuoto non esplode', donutSVG([]).includes('<svg'), true);
+eq('donut 2 fette', (donutSVG([{ id: 'a', value: 1, color: '#f00' }, { id: 'b', value: 3, color: '#0f0' }]).match(/donut-slice/g) || []).length, 2);
+eq('donut ignora valori 0', (donutSVG([{ id: 'a', value: 0, color: '#f00' }, { id: 'b', value: 3, color: '#0f0' }]).match(/donut-slice/g) || []).length, 1);
+eq('bars vuoto non esplode', barsSVG([]).includes('<svg'), true);
+eq('bars con valori 0 (max=1)', barsSVG([{ label: 'x', values: [{ v: 0, color: '#000' }] }]).includes('NaN'), false);
+eq('ringPositions 4', ringPositions(4).map(p => [Math.round(p.x), Math.round(p.y)]), [[50, 0], [100, 50], [50, 100], [0, 50]]);
+
+out.insertAdjacentHTML('beforeend', `<h2>Totale: ${pass} ok, ${fail} falliti</h2>`);
+window.__result = { pass, fail };
+</script></body></html>

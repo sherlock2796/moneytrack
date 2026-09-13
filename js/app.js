@@ -112,6 +112,9 @@ async function main() {
   });
   try { await initAuth(); } catch (e) { console.warn(e); }
   emit('auth');
+  // se già connesso, prima scarica i dati dal cloud: così un dispositivo nuovo non propone
+  // l'import e le ricorrenze non vengono generate due volte
+  if (syncState.user) { try { await sync(); } catch (e) { console.warn(e); } }
   if (!state.settings.onboarded && live.transactions().length === 0 && live.accounts().length === 0) {
     await onboarding();
     await setSetting('onboarded', true);

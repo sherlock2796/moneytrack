@@ -110,12 +110,26 @@ export function spentByCategory(txs) {
 }
 
 export function filterTx({ from, to, account, type, category, query } = {}) {
-  const q = query ? query.toLowerCase() : '';
+  const q = query ? query.trim().toLowerCase() : '';
+  // la ricerca guarda nota, nome categoria e nome conto
+  const cats = q ? byId('categories') : null, accs = q ? byId('accounts') : null;
+  const matches = t => {
+    if ((t.note || '').toLowerCase().includes(q)) return true;
+    const c = cats.get(t.category_id), a = accs.get(t.account_id), to = accs.get(t.to_account_id);
+    return !!((c && c.name.toLowerCase().includes(q)) || (a && a.name.toLowerCase().includes(q)) || (to && to.name.toLowerCase().includes(q)));
+  };
   return live.transactions().filter(t =>
     inRange(t, from, to) &&
     (!account || t.account_id === account || t.to_account_id === account) &&
     (!type || t.type === type) &&
     (!category || t.category_id === category) &&
-    (!q || (t.note || '').toLowerCase().includes(q))
+    (!q || matches(t))
   ).sort((a, b) => b.date.localeCompare(a.date) || (b.updated_at || '').localeCompare(a.updated_at || ''));
+}
+
+// quante transazioni/ricorrenze usano un conto o una categoria (per impedire eliminazioni che lascerebbero righe orfane)
+export function usageCount(table, id) {
+  const tx = live.transactions(), rec = live.recurring();
+  if (table === 'accounts') return tx.filter(t => t.account_id === id || t.to_account_id === id).length + rec.filter(r => r.account_id === id || r.to_account_id === id).length;
+  return tx.filter(t => t.category_id === id).length + rec.filter(r => r.category_id === id).length;
 }

@@ -14,8 +14,9 @@ export function render(el) {
   const r = range(ui.period);
   const all = filterTx({ from: r.from, to: r.to, account: ui.account });
   const exp = sumBy(all, 'expense'), inc = sumBy(all, 'income');
-  const cats = live.categories(ui.mode).filter(c => !c.archived);
   const spent = ui.mode === 'expense' ? spentByCategory(all) : (() => { const m = new Map(); for (const x of all) if (x.type === 'income') m.set(x.category_id, (m.get(x.category_id) || 0) + Number(x.amount)); return m; })();
+  // categorie attive, più quelle archiviate che hanno movimenti nel periodo (altrimenti sparirebbero dall'anello)
+  const cats = live.categories(ui.mode).filter(c => !c.archived || (spent.get(c.id) || 0) > 0);
   // categorie con importo per l'anello (ordinate per importo), tutte per le bolle
   const slices = cats.filter(c => (spent.get(c.id) || 0) > 0).map(c => ({ id: c.id, value: spent.get(c.id), color: c.color, title: `${c.name}: ${money(spent.get(c.id))}` }));
   const shown = cats; // tutte le categorie attorno all'anello

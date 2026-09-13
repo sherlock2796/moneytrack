@@ -1,6 +1,6 @@
 // Ricorrenze: genera le transazioni scadute
-import { state, live, upsertMany, upsert } from './store.js';
-import { addDays, addMonths, todayISO } from './format.js';
+import { state, live, upsertMany } from './store.js';
+import { addDays, addMonths, todayISO, stableUuid } from './format.js';
 
 export const FREQUENCIES = ['weekly', 'monthly', 'quarterly', 'yearly', 'two_years'];
 
@@ -16,18 +16,26 @@ export function advance(iso, frequency) {
 }
 
 // Crea le transazioni per ogni ricorrenza attiva con next_date <= oggi. Ritorna il numero creato.
+// L'id della transazione è deterministico (regola + data): se due dispositivi generano la stessa
+// scadenza prima di sincronizzarsi ottengono lo stesso id e non nascono doppioni; e una scadenza
+// che l'utente ha cancellato non viene ricreata.
 export async function processDue() {
   const today = todayISO();
+  const existing = new Set(state.transactions.map(t => t.id));
   const created = []; const updatedRules = [];
   for (const r of live.recurring()) {
     if (!r.active || !r.next_date) continue;
     let next = r.next_date; let guard = 0;
     while (next <= today && guard++ < 400) {
-      created.push({
-        type: r.type || 'expense', amount: r.amount, date: next, category_id: r.category_id || null,
-        account_id: r.account_id || null, to_account_id: r.to_account_id || null, note: r.note || '',
-        is_recurring: true, recurring_id: r.id,
-      });
+      const id = await stableUuid(`recurring:${r.id}:${next}`);
+      if (!existing.has(id)) {
+        created.push({
+          id, type: r.type || 'expense', amount: r.amount, date: next, category_id: r.category_id || null,
+          account_id: r.account_id || null, to_account_id: r.to_account_id || null, note: r.note || '',
+          is_recurring: true, recurring_id: r.id,
+        });
+        existing.add(id);
+      }
       next = advance(next, r.frequency);
     }
     if (next !== r.next_date) updatedRules.push({ ...r, next_date: next });

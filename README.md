@@ -47,3 +47,8 @@ js/recurring.js                           ricorrenze
 data/notion/*.json                        dati iniziali esportati da Notion
 supabase/schema.sql                       tabelle + RLS
 ```
+
+## Test
+
+`tools/test.html` esegue i test delle funzioni pure (calcolatrice, date, periodi, ricorrenze, grafici):
+avvia il server locale e apri http://localhost:8765/tools/test.html — in fondo alla pagina il conteggio ok/falliti.

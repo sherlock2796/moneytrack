@@ -45,6 +45,15 @@ export async function clearStore(store) {
   const db = await openDB();
   const t = tx(db, [store], 'readwrite'); t.objectStore(store).clear(); await done(t);
 }
+// cancella solo i dati (conti, categorie, transazioni, ricorrenze) e lo stato di sync, non le impostazioni
+export async function clearData() {
+  const db = await openDB();
+  const t = tx(db, [...TABLES, 'outbox', 'settings'], 'readwrite');
+  for (const n of [...TABLES, 'outbox']) t.objectStore(n).clear();
+  for (const n of TABLES) t.objectStore('settings').delete('pull_' + n);
+  t.objectStore('settings').delete('last_sync');
+  await done(t);
+}
 export async function clearAll() {
   const db = await openDB();
   const names = [...TABLES, 'settings', 'outbox'];

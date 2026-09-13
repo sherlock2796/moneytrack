@@ -44,6 +44,23 @@ export async function signUp(email, password) {
   const { data, error } = await c.auth.signUp({ email, password });
   if (error) throw error; syncState.user = data.user; emit('auth'); return data;
 }
+// true se il cloud contiene già dati dell'utente (usato al login per evitare doppioni)
+export async function cloudHasData() {
+  const c = getClient(); if (!c || !syncState.user) return false;
+  const res = await Promise.all(['transactions', 'accounts', 'categories'].map(tb => c.from(tb).select('id').limit(1)));
+  for (const r of res) { if (r.error) throw r.error; if (r.data && r.data.length) return true; }
+  return false;
+}
+
+// scarta i dati locali (mai sincronizzati) e riparte dal cloud
+export async function resetLocalAndPull() {
+  await db.clearData();
+  for (const tb of TABLES) state[tb] = [];
+  state.settings.last_sync = null;
+  emit('data');
+  return sync();
+}
+
 export async function signOut() {
   const c = getClient(); if (!c) return;
   await c.auth.signOut(); syncState.user = null; emit('auth');

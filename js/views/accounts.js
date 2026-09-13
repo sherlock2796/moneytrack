@@ -1,8 +1,8 @@
 // Conti: saldi, gestione, trasferimenti
-import { live, upsert, remove, accountBalance, totalBalance, state } from '../store.js';
+import { live, upsert, remove, accountBalance, totalBalance, state, usageCount } from '../store.js';
 import { t } from '../i18n.js';
 import { esc, money } from '../format.js';
-import { openSheet, closeLayer, sheetHead, toast, confirm, PALETTE, ICON } from '../ui.js';
+import { openSheet, closeLayer, sheetHead, toast, confirm, alert, PALETTE, ICON } from '../ui.js';
 import { scheduleSync } from '../sync.js';
 import { openAdd } from './add.js';
 
@@ -54,6 +54,8 @@ export function editAccount(acc) {
     await upsert('accounts', a); closeLayer(el); scheduleSync(); toast(t('saved'));
   };
   el.querySelector('[data-del]')?.addEventListener('click', async () => {
+    const n = usageCount('accounts', acc.id);
+    if (n) { await alert(t('account_in_use', { n })); return; }
     if (!(await confirm(t('confirm_delete'), { okLabel: t('delete'), danger: true }))) return;
     await remove('accounts', acc.id); closeLayer(el); scheduleSync(); toast(t('deleted'));
   });

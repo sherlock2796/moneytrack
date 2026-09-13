@@ -1,8 +1,8 @@
 // Editor categoria (condiviso da Budget e Impostazioni)
-import { live, upsert, remove } from '../store.js';
+import { live, upsert, remove, usageCount } from '../store.js';
 import { t } from '../i18n.js';
 import { esc } from '../format.js';
-import { openSheet, closeLayer, sheetHead, toast, confirm, PALETTE, ICON } from '../ui.js';
+import { openSheet, closeLayer, sheetHead, toast, confirm, alert, PALETTE, ICON } from '../ui.js';
 import { scheduleSync } from '../sync.js';
 
 export function editCategory(cat, type = 'expense') {
@@ -28,6 +28,8 @@ export function editCategory(cat, type = 'expense') {
     await upsert('categories', c); closeLayer(el); scheduleSync(); toast(t('saved'));
   };
   el.querySelector('[data-del]')?.addEventListener('click', async () => {
+    const n = usageCount('categories', cat.id);
+    if (n) { await alert(t('category_in_use', { n })); return; }
     if (!(await confirm(t('confirm_delete'), { okLabel: t('delete'), danger: true }))) return;
     await remove('categories', cat.id); closeLayer(el); scheduleSync(); toast(t('deleted'));
   });

@@ -84,7 +84,11 @@ export function exportJSON() {
 export async function importJSON(obj, { replace = true } = {}) {
   if (!obj || obj.app !== 'MoneyTrack' || !Array.isArray(obj.transactions)) throw new Error('Backup non valido');
   if (replace) {
-    for (const tname of db.TABLES) { await db.clearStore(tname); state[tname] = []; }
+    // svuota i dati locali e azzera i cursori di sync: alla prossima sync il cloud viene riscaricato per intero
+    // e unito al backup (per le righe con lo stesso id vince il backup, che ha data di modifica più recente)
+    await db.clearData();
+    for (const tname of db.TABLES) state[tname] = [];
+    state.settings.last_sync = null;
   }
   for (const tname of db.TABLES) {
     const rows = (obj[tname] || []).map(r => ({ ...r, updated_at: r.updated_at || nowISO() }));

@@ -2,15 +2,17 @@
 import { getLang, t } from './i18n.js';
 
 const locale = () => (getLang() === 'en' ? 'en-GB' : 'it-IT');
+// 'always' forza il separatore delle migliaia anche sotto 10.000 (CLDR it-IT altrimenti non lo mette); fallback true
+const GROUPING = (() => { try { new Intl.NumberFormat('it-IT', { useGrouping: 'always' }); return 'always'; } catch { return true; } })();
 
 export function money(n, opts = {}) {
   const v = Number(n) || 0;
-  const s = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Math.abs(v));
+  const s = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: GROUPING }).format(Math.abs(v));
   if (opts.sign) return (v < 0 ? '−' : v > 0 ? '+' : '') + s;
   return v < 0 ? '−' + s : s;
 }
 export function num(n, digits = 2) {
-  return new Intl.NumberFormat(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(Number(n) || 0);
+  return new Intl.NumberFormat(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: GROUPING }).format(Number(n) || 0);
 }
 export function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
@@ -50,6 +52,15 @@ export function uuid() {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
+// UUID deterministico (v5-like, SHA-1) da una stringa: stesso input → stesso id su ogni dispositivo
+export async function stableUuid(str) {
+  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
+  const b = new Uint8Array(buf).slice(0, 16);
+  b[6] = (b[6] & 0x0f) | 0x50; b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
 export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -80,5 +91,5 @@ export function evalExpr(expr) {
     else { const b = st.pop(), a = st.pop(); if (a === undefined || b === undefined) return NaN;
       st.push(x === '+' ? a + b : x === '-' ? a - b : x === '*' ? a * b : b === 0 ? NaN : a / b); }
   }
-  return st.length === 1 ? round2(st[0]) : NaN;
+  return st.length === 1 && Number.isFinite(st[0]) ? round2(st[0]) : NaN;
 }
