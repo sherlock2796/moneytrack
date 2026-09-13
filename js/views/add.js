@@ -35,8 +35,8 @@ export function openAdd(opts = {}) {
     el.querySelector('[data-newcat]')?.addEventListener('click', () => editCategory(null, s.type));
     el.querySelector('[data-account]')?.addEventListener('click', () => pickAccount('accountId'));
     el.querySelector('[data-toaccount]')?.addEventListener('click', () => pickAccount('toAccountId'));
+    // l'input data (invisibile) copre tutto il chip: il tocco apre il selettore nativo su ogni piattaforma
     const dateInp = el.querySelector('[data-date-input]');
-    el.querySelector('[data-date]')?.addEventListener('click', () => { if (dateInp.showPicker) { try { dateInp.showPicker(); return; } catch {} } dateInp.click(); });
     dateInp?.addEventListener('change', () => { if (dateInp.value) { s.date = dateInp.value; draw(); } });
     const note = el.querySelector('[data-note]'); note?.addEventListener('input', () => { s.note = note.value; });
     el.querySelector('[data-recurring]')?.addEventListener('change', e => { s.isRecurring = e.target.checked; });
@@ -127,8 +127,7 @@ function view(s, tx) {
     <div class="selectors">
       <button class="chip set" data-account>${esc(acc?.icon || '')} ${esc(acc?.name || t('account'))}</button>
       ${s.type === 'transfer' ? `<span class="muted" style="align-self:center">→</span><button class="chip set" data-toaccount>${esc(toAcc?.icon || '')} ${esc(toAcc?.name || t('to_account'))}</button>` : ''}
-      <button class="chip set" data-date>${ICON.calendar.replace('<svg', '<svg style="width:16px;height:16px;vertical-align:-3px"')} ${esc(fmtDate(s.date, 'day'))}</button>
-      <input type="date" data-date-input value="${s.date}" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px">
+      <label class="chip set date-chip">${ICON.calendar.replace('<svg', '<svg style="width:16px;height:16px;vertical-align:-3px"')} ${esc(fmtDate(s.date, 'day'))}<input type="date" data-date-input value="${s.date}" max="2099-12-31"></label>
       ${s.type !== 'transfer' && cat ? `<button class="chip set" data-pickcat style="--c:${esc(cat.color)}">${esc(cat.icon)} ${esc(cat.name)} ▾</button>` : ''}
     </div>
     <div class="field"><input data-note placeholder="${t('note_placeholder')}" value="${esc(s.note)}" maxlength="120"></div>
