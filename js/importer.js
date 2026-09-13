@@ -38,31 +38,38 @@ export async function importNotionSeed(seed) {
 
   const acc = n => accByName.get(String(n).toLowerCase());
   const cat = (type, n) => catByKey.get(catKey(type, String(n)));
-  const txs = []; let maxDate = '0000-00-00';
+  // idempotente: salta le transazioni già presenti (stesso tipo, importo, data, nota, categoria, conto)
+  const txKey = t => [t.type, round2(t.amount), t.date, (t.note || '').trim().toLowerCase(), t.category_id || '', t.account_id || '', t.to_account_id || ''].join('|');
+  const existing = new Set(live.transactions().map(txKey));
+  const pushTx = t => { if (existing.has(txKey(t))) { skipped++; return; } existing.add(txKey(t)); txs.push(t); };
+  const txs = []; let maxDate = '0000-00-00'; let skipped = 0;
   for (const e of seed.expenses) {
-    txs.push({ id: uuid(), type: 'expense', amount: round2(e.a), date: e.d, category_id: cat('expense', e.c)?.id || null, account_id: acc(e.p)?.id || null, to_account_id: null, note: e.n || '', is_recurring: !!e.r, recurring_id: null });
+    pushTx({ id: uuid(), type: 'expense', amount: round2(e.a), date: e.d, category_id: cat('expense', e.c)?.id || null, account_id: acc(e.p)?.id || null, to_account_id: null, note: e.n || '', is_recurring: !!e.r, recurring_id: null });
     if (e.d > maxDate) maxDate = e.d;
   }
   for (const e of seed.incomes) {
-    txs.push({ id: uuid(), type: 'income', amount: round2(e.a), date: e.d, category_id: cat('income', e.c)?.id || null, account_id: acc(e.p)?.id || null, to_account_id: null, note: e.n || '', is_recurring: false, recurring_id: null });
+    pushTx({ id: uuid(), type: 'income', amount: round2(e.a), date: e.d, category_id: cat('income', e.c)?.id || null, account_id: acc(e.p)?.id || null, to_account_id: null, note: e.n || '', is_recurring: false, recurring_id: null });
     if (e.d > maxDate) maxDate = e.d;
   }
   for (const e of seed.transfers || []) {
-    txs.push({ id: uuid(), type: 'transfer', amount: round2(e.a), date: e.d, category_id: null, account_id: acc(e.from)?.id || null, to_account_id: acc(e.to)?.id || null, note: e.n && e.n !== 'Transfer' ? e.n : '', is_recurring: false, recurring_id: null });
+    pushTx({ id: uuid(), type: 'transfer', amount: round2(e.a), date: e.d, category_id: null, account_id: acc(e.from)?.id || null, to_account_id: acc(e.to)?.id || null, note: e.n && e.n !== 'Transfer' ? e.n : '', is_recurring: false, recurring_id: null });
   }
-  await upsertMany('transactions', txs, { silent: true });
+  if (txs.length) await upsertMany('transactions', txs, { silent: true });
 
   // abbonamenti → ricorrenze, prossima data oltre l'ultima transazione importata (evita duplicati)
   const floor = maxDate > todayISO() ? maxDate : todayISO();
   const rules = [];
+  const ruleKey = r => [(r.note || '').trim().toLowerCase(), round2(r.amount), r.frequency].join('|');
+  const existingRules = new Set(live.recurring().map(ruleKey));
   for (const s of seed.subscriptions || []) {
     const freq = BILLING_MAP[String(s.billing).toLowerCase()] || 'monthly';
+    if (existingRules.has(ruleKey({ note: s.name, amount: s.cost, frequency: freq }))) continue;
     let next = s.renewal; let guard = 0;
     while (next <= floor && guard++ < 200) next = advance(next, freq);
     rules.push({ id: uuid(), type: 'expense', amount: round2(s.cost), category_id: cat('expense', s.category)?.id || null, account_id: acc(s.account)?.id || null, to_account_id: null, note: s.name, frequency: freq, next_date: next, active: true });
   }
   if (rules.length) await upsertMany('recurring', rules, { silent: true });
-  return { accounts: newAccounts.length, categories: newCats.length, transactions: txs.length, recurring: rules.length };
+  return { accounts: newAccounts.length, categories: newCats.length, transactions: txs.length, recurring: rules.length, skipped };
 }
 
 // ---- backup JSON ----

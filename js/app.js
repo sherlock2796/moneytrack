@@ -77,11 +77,12 @@ function renderSyncDot() {
 async function onboarding() {
   return new Promise(resolve => {
     const el = openModal(`<div class="title">${t('welcome_title')}</div><p class="muted">${t('welcome_text')}</p>
-      <div class="actions"><button class="btn" data-empty>${t('start_empty')}</button><button class="btn primary" data-notion>${t('start_notion')}</button></div>`, { dismissable: false });
+      <div class="actions" style="flex-wrap:wrap"><button class="btn" data-login>${t('start_login')}</button><button class="btn" data-empty>${t('start_empty')}</button><button class="btn primary" data-notion>${t('start_notion')}</button></div>`, { dismissable: false });
     el.querySelector('[data-empty]').onclick = () => { closeLayer(el); resolve(false); };
+    el.querySelector('[data-login]').onclick = () => { closeLayer(el); navigate('settings'); resolve(false); };
     el.querySelector('[data-notion]').onclick = async () => {
       const b = el.querySelector('[data-notion]'); b.disabled = true; b.textContent = '…';
-      try { const seed = await loadNotionSeed(); const r = await importNotionSeed(seed); closeLayer(el); toast(t('import_done') + ` (${r.transactions})`); resolve(true); }
+      try { const seed = await loadNotionSeed(); const r = await importNotionSeed(seed); closeLayer(el); toast(t('import_result', { n: r.transactions, s: r.skipped }), { duration: 5000 }); resolve(true); }
       catch (e) { console.error(e); b.disabled = false; b.textContent = t('start_notion'); toast(t('error') + ': ' + e.message); }
     };
   });

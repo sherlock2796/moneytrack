@@ -1,5 +1,5 @@
 // Service worker: cache dell'app per uso offline
-const VERSION = 'mt-v0.1.3';
+const VERSION = 'mt-v0.1.4';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css', './lib/supabase.js', './data/notion/meta.json', './data/notion/expenses-1.json', './data/notion/expenses-2.json', './data/notion/expenses-3.json', './data/notion/incomes.json',
   './js/app.js', './js/config.js', './js/db.js', './js/store.js', './js/sync.js', './js/i18n.js', './js/format.js', './js/ui.js',

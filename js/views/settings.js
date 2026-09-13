@@ -87,7 +87,7 @@ export function render(el) {
       const seed = await loadNotionSeed();
       const n = seed.expenses.length + seed.incomes.length + (seed.transfers || []).length;
       if (!(await confirm(t('import_confirm', { n, r: (seed.subscriptions || []).length })))) return;
-      const r = await importNotionSeed(seed); emit('data'); scheduleSync(); toast(t('import_done') + ` (${r.transactions})`);
+      const r = await importNotionSeed(seed); emit('data'); scheduleSync(); toast(t('import_result', { n: r.transactions, s: r.skipped }), { duration: 5000 });
     } catch (e) { toast(t('error') + ': ' + e.message); }
   };
   el.querySelector('[data-wipe]').onclick = async () => {
