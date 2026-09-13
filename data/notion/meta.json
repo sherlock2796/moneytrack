@@ -1,0 +1,57 @@
+{
+  "accounts": [
+    {"name": "Cash", "icon": "💵", "color": "#4CAF50", "includeInTotal": true},
+    {"name": "Extra Cash", "icon": "💰", "color": "#8BC34A", "includeInTotal": true},
+    {"name": "Saving LY", "icon": "🐷", "color": "#FF9800", "includeInTotal": false},
+    {"name": "Bybyt", "icon": "🪙", "color": "#F5A623", "includeInTotal": false}
+  ],
+  "expenseCategories": [
+    {"name": "Bills", "icon": "🧾", "color": "#FF7043", "budget": 202, "budgetPeriod": "month"},
+    {"name": "Rent", "icon": "🏠", "color": "#8D6E63", "budget": 302, "budgetPeriod": "month"},
+    {"name": "Spesa", "icon": "🛒", "color": "#66BB6A", "budget": 202, "budgetPeriod": "month"},
+    {"name": "Food & Drinks", "icon": "🍔", "color": "#FFA726", "budget": 152, "budgetPeriod": "month"},
+    {"name": "Benzina + auto", "icon": "🚗", "color": "#42A5F5", "budget": 302, "budgetPeriod": "month"},
+    {"name": "Abbonamenti", "icon": "🔁", "color": "#AB47BC", "budget": 102, "budgetPeriod": "month"},
+    {"name": "Entertainment", "icon": "🎮", "color": "#EC407A", "budget": 52, "budgetPeriod": "month"},
+    {"name": "Tabaccheria", "icon": "🚬", "color": "#78909C", "budget": 52, "budgetPeriod": "month"},
+    {"name": "Extra", "icon": "⭐", "color": "#FFCA28", "budget": 165, "budgetPeriod": "month"},
+    {"name": "Weed", "icon": "🌿", "color": "#26A69A", "budget": 252, "budgetPeriod": "month"},
+    {"name": "Animali", "icon": "🐾", "color": "#A1887F", "budget": 28, "budgetPeriod": "month"},
+    {"name": "Viaggi", "icon": "✈️", "color": "#29B6F6", "budget": 1400, "budgetPeriod": "year"},
+    {"name": "Assicurazioni", "icon": "🛡️", "color": "#5C6BC0", "budget": 850, "budgetPeriod": "year"},
+    {"name": "Spese mediche", "icon": "💊", "color": "#EF5350", "budget": 765, "budgetPeriod": "year"},
+    {"name": "Lose/Gain", "icon": "📈", "color": "#BDBDBD", "budget": 0, "budgetPeriod": "month"},
+    {"name": "Casa + Piscina", "icon": "🏊", "color": "#26C6DA", "budget": 0, "budgetPeriod": "month"}
+  ],
+  "incomeCategories": [
+    {"name": "Salary", "icon": "💼", "color": "#43A047"},
+    {"name": "Side Hustle", "icon": "⚡", "color": "#7CB342"},
+    {"name": "Ripetizioni", "icon": "📚", "color": "#00ACC1"},
+    {"name": "Remains", "icon": "🐷", "color": "#9E9D24"}
+  ],
+  "expensesExtra": [
+    {"n": "Rata auto", "a": 233.05, "d": "2026-09-22", "c": "Benzina + auto", "p": "Cash", "r": 1},
+    {"n": "Gamepass", "a": 12.99, "d": "2026-09-30", "c": "Abbonamenti", "p": "Cash", "r": 1},
+    {"n": "Toelettatura Kobe", "a": 70, "d": "2026-09-30", "c": "Animali", "p": "Cash", "r": 0}
+  ],
+  "transfers": [
+    {"n": "Transfer", "a": 554.78, "d": "2026-01-10", "from": "Saving LY", "to": "Cash"},
+    {"n": "Transfer", "a": 200, "d": "2026-01-18", "from": "Cash", "to": "Bybyt"},
+    {"n": "Transfer", "a": 70, "d": "2026-02-08", "from": "Cash", "to": "Extra Cash"},
+    {"n": "Transfer", "a": 40, "d": "2026-04-22", "from": "Extra Cash", "to": "Cash"},
+    {"n": "Transfer", "a": 100, "d": "2026-05-22", "from": "Cash", "to": "Extra Cash"}
+  ],
+  "subscriptions": [
+    {"name": "Rata Macchina", "cost": 233.05, "billing": "monthly", "renewal": "2026-08-22", "category": "Benzina + auto", "account": "Cash"},
+    {"name": "Wi-Fi", "cost": 27.89, "billing": "monthly", "renewal": "2026-09-12", "category": "Abbonamenti", "account": "Cash"},
+    {"name": "Claude", "cost": 21.48, "billing": "monthly", "renewal": "2026-09-10", "category": "Abbonamenti", "account": "Cash"},
+    {"name": "GamePass PC", "cost": 12.99, "billing": "monthly", "renewal": "2026-07-27", "category": "Abbonamenti", "account": "Cash"},
+    {"name": "Amazon Prime", "cost": 49.9, "billing": "yearly", "renewal": "2026-06-11", "category": "Abbonamenti", "account": "Cash"},
+    {"name": "Crunchyroll", "cost": 16, "billing": "yearly", "renewal": "2026-01-18", "category": "Abbonamenti", "account": "Cash"},
+    {"name": "Assicurazione auto", "cost": 450, "billing": "yearly", "renewal": "2026-06-28", "category": "Assicurazioni", "account": "Cash"},
+    {"name": "Assicurazione civile", "cost": 115, "billing": "yearly", "renewal": "2026-04-05", "category": "Assicurazioni", "account": "Cash"},
+    {"name": "Bollo Macchina", "cost": 219.87, "billing": "yearly", "renewal": "2026-05-01", "category": "Benzina + auto", "account": "Cash"},
+    {"name": "Tagliando", "cost": 350, "billing": "yearly", "renewal": "2026-06-24", "category": "Benzina + auto", "account": "Cash"},
+    {"name": "Manutenzione caldaia", "cost": 160, "billing": "yearly", "renewal": "2026-05-01", "category": "Bills", "account": "Cash"}
+  ]
+}
