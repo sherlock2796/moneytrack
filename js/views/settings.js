@@ -26,7 +26,7 @@ export function render(el) {
             <div class="small muted mt"><span class="sync-dot ${syncState.status === 'ok' ? 'ok' : syncState.status === 'error' ? 'err' : ''}"></span>${t('last_sync')}: ${state.settings.last_sync ? esc(new Date(state.settings.last_sync).toLocaleString()) : t('never')}${syncState.message ? ` · <span class="expense">${esc(syncState.message)}</span>` : ''}</div></div>
             <div><button class="btn sm primary" data-sync>${t('sync_now')}</button> <button class="btn sm" data-logout>${t('logout')}</button></div></div>`
       : `<div class="muted small mb">${t('not_logged')}</div>
-        <div class="login-box"><div class="field"><label>${t('email')}</label><input type="email" data-email autocomplete="email"></div>
+        <div class="login-box"><div class="field"><label>${t('email')}</label><input type="email" data-email autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="email"></div>
         <div class="field"><label>${t('password')}</label><input type="password" data-password autocomplete="current-password"></div>
         <div class="row"><button class="btn primary grow" data-login>${t('login')}</button><button class="btn grow" data-signup>${t('signup')}</button></div>
         <button class="btn ghost sm mt" data-sb-reset>⚙︎ Supabase</button></div>`}
@@ -69,6 +69,7 @@ export function render(el) {
   el.querySelector('[data-sb-reset]')?.addEventListener('click', async () => { await setSetting('supabase_url', ''); await setSetting('supabase_key', ''); getClient(); render(el); });
   el.querySelector('[data-login]')?.addEventListener('click', () => auth(el, 'in'));
   el.querySelector('[data-signup]')?.addEventListener('click', () => auth(el, 'up'));
+  el.querySelector('[data-password]')?.addEventListener('keydown', e => { if (e.key === 'Enter') auth(el, 'in'); });
   el.querySelector('[data-logout]')?.addEventListener('click', async () => { await signOut(); render(el); });
   el.querySelector('[data-sync]')?.addEventListener('click', async () => { const b = el.querySelector('[data-sync]'); b.disabled = true; await sync(); render(el); });
   el.querySelector('[data-lang]').onchange = async e => { await setSetting('lang', e.target.value); setLang(e.target.value); location.reload(); };
@@ -96,11 +97,29 @@ export function render(el) {
   };
 }
 
+// traduce i messaggi di errore più comuni di Supabase Auth
+function authErrorText(e) {
+  const m = String(e?.message || e || '').toLowerCase();
+  if (m.includes('invalid login credentials')) return t('auth_bad_credentials');
+  if (m.includes('already registered') || m.includes('already exists')) return t('auth_already_registered');
+  if (m.includes('at least 6')) return t('auth_password_short');
+  if (m.includes('invalid') && m.includes('email')) return t('auth_bad_email');
+  if (m.includes('rate limit') || m.includes('too many')) return t('auth_rate_limit');
+  if (m.includes('failed to fetch') || m.includes('load failed') || m.includes('network')) return t('auth_offline');
+  return t('error') + ': ' + (e?.message || e);
+}
+
 async function auth(el, mode) {
   const email = el.querySelector('[data-email]').value.trim(), pw = el.querySelector('[data-password]').value;
-  if (!email || !pw) return;
+  // validazione locale con messaggi chiari (su iOS un tasto che "non fa nulla" sembra rotto)
+  if (!email || !pw) { toast(t('auth_fill_fields')); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast(t('auth_bad_email')); return; }
+  if (pw.length < 6) { toast(t('auth_password_short')); return; }
+  const btns = el.querySelectorAll('[data-login],[data-signup]'); btns.forEach(b => { b.disabled = true; });
+  const active = el.querySelector(mode === 'in' ? '[data-login]' : '[data-signup]'); const label = active.textContent; active.textContent = '…';
   try {
     if (mode === 'in') await signIn(email, pw); else { const r = await signUp(email, pw); if (!r.session) { await alert(t('signup_confirm_email')); render(el); return; } }
+    toast(mode === 'in' ? t('auth_logged_in') : t('auth_registered'));
     render(el);
     // dati locali mai sincronizzati + cloud già popolato → chiedi cosa fare (evita doppioni)
     const localRows = live.transactions().length + live.accounts().length + live.categories().length;
@@ -114,7 +133,7 @@ async function auth(el, mode) {
       if (choice === 'cloud') { await resetLocalAndPull(); render(el); return; }
     }
     scheduleSync(300);
-  } catch (e) { toast(t('error') + ': ' + (e.message || e)); }
+  } catch (e) { toast(authErrorText(e), { duration: 5000 }); btns.forEach(b => { b.disabled = false; }); active.textContent = label; }
 }
 
 function categoriesSheet(type) {
