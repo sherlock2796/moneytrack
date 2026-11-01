@@ -105,7 +105,8 @@ function authErrorText(e) {
   if (m.includes('at least 6')) return t('auth_password_short');
   if (m.includes('invalid') && m.includes('email')) return t('auth_bad_email');
   if (m.includes('rate limit') || m.includes('too many')) return t('auth_rate_limit');
-  if (m.includes('failed to fetch') || m.includes('load failed') || m.includes('network')) return t('auth_offline');
+  // distingue "il telefono è offline" da "il server non risponde" (es. progetto Supabase in pausa)
+  if (m.includes('failed to fetch') || m.includes('load failed') || m.includes('network')) return navigator.onLine ? t('auth_server_unreachable') : t('auth_offline');
   return t('error') + ': ' + (e?.message || e);
 }
 
