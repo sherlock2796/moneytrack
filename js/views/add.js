@@ -38,6 +38,12 @@ export function openAdd(opts = {}) {
     // l'input data (invisibile) copre tutto il chip: il tocco apre il selettore nativo su ogni piattaforma
     const dateInp = el.querySelector('[data-date-input]');
     dateInp?.addEventListener('change', () => { if (dateInp.value) { s.date = dateInp.value; draw(); } });
+    // su desktop (Chrome/Edge/Firefox) il clic sull'input invisibile mette solo il focus sui campi gg/mm/aaaa
+    // senza aprire il calendario: lo apriamo esplicitamente con showPicker()
+    dateInp?.addEventListener('click', () => {
+      if (typeof dateInp.showPicker !== 'function' || !matchMedia('(pointer: fine)').matches) return;
+      try { dateInp.showPicker(); } catch { /* già aperto o non consentito */ }
+    });
     const note = el.querySelector('[data-note]'); note?.addEventListener('input', () => { s.note = note.value; });
     el.querySelector('[data-recurring]')?.addEventListener('change', e => { s.isRecurring = e.target.checked; });
     el.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { s.categoryId = b.dataset.cat; save(); });
